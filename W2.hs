@@ -263,7 +263,15 @@ laskuri commands = laskuri' 0 0 [] commands
 --
 -- Esimerkki: squares 5 ==> [1,4,9,121,484]
 
+startsWith n d
+    | n < 10 = n == d
+    | otherwise = startsWith (div n 10) d
+
+symmetric :: Integer -> Bool
+symmetric a = (head a') == (head . reverse $ a')
+  where a' = show a
+
 squares :: Int -> [Integer]
 squares n = take n $ filter symmetric squares'
   where squares' = map (^ 2) [1..]
-        symmetric a = (head . show $ a) == (head . reverse . show $ a)
+--        symmetric a = startsWith a (mod a 10)
