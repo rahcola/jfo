@@ -168,9 +168,10 @@ prop_t9_while = monadicIO $ do
 prop_t10_debug = monadicIO $ do
   sana <- pick word
   palautus <- pick word
-  (text,ret) <- runc' $ debug sana (return palautus)
-  stop $ printTestCase ("debug "++show sana++" (return "++show palautus++")") $
-    conjoin [printTestCase "tulostus" $ text === (sana ++ "\n" ++ sana ++ "\n"),
+  tulostus <- pick word
+  (text,ret) <- runc' $ debug sana (putStrLn tulostus >> return palautus)
+  stop $ printTestCase ("debug "++show sana++" (do putStrLn "++show tulostus++"; return "++show palautus++")") $
+    conjoin [printTestCase "tulostus" $ text === (sana ++ "\n" ++ tulostus ++ "\n" ++ sana ++ "\n"),
              printTestCase "palautus" $ ret === palautus]
     
 prop_t11_mapM_ = monadicIO $ do
