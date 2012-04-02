@@ -19,32 +19,25 @@ import System.IO
 -- joista ensimmäinen on "HEI" ja toinen on "MAAILMA".
 
 hei :: IO ()
-hei = do
-    putStrLn "HEI"
-    putStrLn "MAAILMA"
+hei = putStrLn "HEI\nMAAILMA"
 
 -- Tehtävä 2: Määrittele operaatio tervehdi siten, että tervehdi nimi
 -- tulostaa "HEI nimi"
 
 tervehdi :: String -> IO ()
-tervehdi s = do
-    putStrLn $ "HEI " ++ s
+tervehdi s = putStrLn $ "HEI " ++ s
 
 -- Tehtävä 3: Määrittele operaatio tervehdi', joka lukee nimen
 -- näppäimistöltä ja sitten tervehtii kuten edellisessä tehtävässä.
 
 tervehdi' :: IO ()
-tervehdi' = do
-    nimi <- getLine
-    tervehdi nimi
+tervehdi' = getLine >>= tervehdi
 
 -- Tehtävä 4: Määrittele operaatio lueSanat n joka lukee käyttäjältä n
 -- sanaa (yksi per rivi) ja palauttaa ne aakkosjärjestyksessä
 
 lueSanat :: Int -> IO [String]
-lueSanat n = do
-    sanat <- replicateM n getLine
-    return $ sort sanat
+lueSanat n = replicateM n getLine >>= return . sort
 
 -- Tehtävä 5: Määrittele operaatio lueKunnes f, joka lukee käyttäjältä
 -- merkkijonoja ja palauttaa ne listana. Lukeminen lopetetaan kun f
@@ -52,11 +45,11 @@ lueSanat n = do
 -- True ei liitetä listaan).
 
 lueKunnes :: (String -> Bool) -> IO [String]
-lueKunnes f = do line <- getLine; g line
+lueKunnes f = getLine >>= g
   where
     g line
         | f line = return []
-        | otherwise = do lines <- lueKunnes f; return (line:lines)
+        | otherwise = lueKunnes f >>= return . (:) line
 
 -- Tehtävä 6: Määrittele operaatio printFibs n, joka tulostaa n
 -- ensimmäistä fibonaccin lukua, yhden per rivi
@@ -65,7 +58,7 @@ printFibs :: Int -> IO ()
 printFibs n = fib 1 1 n
   where
     fib x x' 0 = return ()
-    fib x x' n = do print x'; fib (x + x') x (n - 1)
+    fib x x' n = print x' >> fib (x + x') x (n - 1)
 
 -- Tehtävä 7: Määrittele operaatio isums n, joka lukee käyttäjältä n
 -- lukua ja palauttaa niitten summan. Lisäksi jokaisen luvun jälkeen
@@ -75,9 +68,8 @@ isums :: Int -> IO Int
 isums n = g n 0
   where
     g 0 sum = return sum
-    g n sum = do
-        a <- getLine
-        print (read a + sum)
+    g n sum = getLine >>= \a ->
+        print (read a + sum) >>
         g (n - 1) (read a + sum)
 
 -- Tehtävä 8: when on hyödyllinen funktio, mutta sen ensimmäien
@@ -85,7 +77,7 @@ isums n = g n 0
 -- ehto on tyyppiä IO Bool.
 
 whenM :: IO Bool -> IO () -> IO ()
-whenM cond op = do b <- cond; when b op
+whenM = (. flip when) . (>>=)
 
 -- Tehtävä 9: Toteuta funktio while ehto operaatio, joka suorittaa
 -- operaatiota niin kauan kun ehto palauttaa True.
@@ -102,7 +94,7 @@ whenM cond op = do b <- cond; when b op
 -- Tämä tulostaa JEE niin kauan kuin käyttäjä vastaa K
 
 while :: IO Bool -> IO () -> IO ()
-while cond op = whenM cond (do op; while cond op)
+while cond op = whenM cond (op >> while cond op)
 
 -- Tehtävä 10: Toteuta funktio debug, joka ottaa merkkijonon s ja
 -- IO-operaation op, ja palauttaa IO-operaation joka tulostaa annetun
@@ -110,30 +102,21 @@ while cond op = whenM cond (do op; while cond op)
 -- palauttaa op:n palautusarvo.
 
 debug :: String -> IO a -> IO a
-debug s op = do
-    putStrLn s
-    out <- op
-    putStrLn s
-    return out
+debug s op = putStrLn s >> op >>= (putStrLn s >>) . return
 
 -- Tehtävä 11: Toteuta itse funktio mapM_. Saat käyttää (puhtaita)
 -- listafunktioita ja listojen hahmontunnistusta
 
 mymapM_ :: (a -> IO b) -> [a] -> IO ()
 mymapM_ _ [] = return ()
-mymapM_ f (x:xs) = do
-    f x
-    mymapM_ f xs
+mymapM_ f (x:xs) = f x >> mymapM_ f xs
 
 -- Tehtävä 12: Toteuta itse funktio forM. Saat käyttää (puhtaita)
 -- listafunktioita ja listojen hahmontunnistusta
 
 myforM :: [a] -> (a -> IO b) -> IO [b]
 myforM [] f = return []
-myforM (x:xs) f = do
-    x' <- f x
-    xs' <- myforM xs f
-    return (x':xs')
+myforM (x:xs) f = liftM2 (:) (f x) (myforM xs f)
 
 -- Tehtävä 13: Joskus törmää IO-operaatioihin jotka palauttavat
 -- IO-operaatiota. Esimerkiksi IO-operaatio joka palauttaa
@@ -162,9 +145,7 @@ myforM (x:xs) f = do
 -- tyypintarkastuksesta läpi, se on lähes välttämättä oikein.
 
 tuplaKutsu :: IO (IO a) -> IO a
-tuplaKutsu op = do
-    op' <- op
-    op'
+tuplaKutsu = join
 
 -- Tehtävä 14: Monesti IO-operaatioita halutaan ketjuttaa. Toteuta
 -- funktio yhdista joka toimii hieman kuten operaattori (.)
@@ -185,9 +166,7 @@ tuplaKutsu op = do
 -- tyypintarkastuksesta läpi, se on lähes välttämättä oikein.
 
 yhdista :: (a -> IO b) -> (c -> IO a) -> c -> IO b
-yhdista op1 op2 c = do
-    x <- op2 c
-    op1 x
+yhdista = (<=<)
 
 -- Tehtävä 15: Tutustu modulin Data.IORef dokumentaatioon
 -- <http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-IORef.html>
@@ -201,8 +180,7 @@ yhdista op1 op2 c = do
 -- Kyseessä on siis yksinkertainen tilallinen laskuri
 
 mkCounter :: IO (IO (), IO Int)
-mkCounter = do
-    counter <- newIORef 0
+mkCounter = newIORef 0 >>= \counter ->
     return (modifyIORef counter (+ 1), readIORef counter)
 
 -- Tehtävä 16: Toteuta operaatio hFetchLines, joka hakee annetusta
@@ -213,8 +191,7 @@ mkCounter = do
 -- Modulin System.IO dokumentaatio auttanee.
 
 hFetchLines :: Handle -> [Int] -> IO [String]
-hFetchLines h nums = do
-    content <- hGetContents h
+hFetchLines h nums = hGetContents h >>= \content ->
     let matching = filter (\(i, _) -> i `elem` nums) $ zip [1..] (lines content) in
       return $ map snd matching
 
@@ -239,9 +216,7 @@ split sep (c:cs)
     rest = split sep cs
 
 readCSV :: FilePath -> IO [[String]]
-readCSV path = do
-    content <- readFile path
-    return . map (split ',') . lines $ content
+readCSV path = readFile path >>= return . map (split ',') . lines
 
 -- Tehtävä 18: Toteuta operaatio compareFiles, joka saa kaksi
 -- tiedostonimeä, a ja b. Tiedostojen sisältöjen haluttaisiin olevan
@@ -284,13 +259,9 @@ readCSV path = do
 -- [String] -> [String]).
 
 compareFiles :: FilePath -> FilePath -> IO ()
-compareFiles a b = do
-    acontent <- readFile a
-    bcontent <- readFile b
-    let linePairs = zip (lines acontent) (lines bcontent)
-        nonMatching = filter (\(a, b) -> a /= b) linePairs
-        output = map (\(a, b) -> "< " ++ a ++ "\n> " ++ b) nonMatching
-        in mapM_ putStrLn output
+compareFiles a b = liftM2 diff (lines' a) (lines' b) >>= mapM_ putStrLn
+  where diff a b = ["< " ++ a ++ "\n>" ++ b | (a,b) <- (zip a b), a /= b]
+        lines' = liftM lines . readFile
 
 -- Tehtävä 19: Tässä tehtävässä näet miten funktionaalisessa
 -- ohjelmassa logiikan voi toteuttaa puhtaana funktiona, jota ympäröi
@@ -317,8 +288,7 @@ compareFiles a b = do
 --
 
 interact' :: ((String,a) -> (Bool,String,a)) -> a -> IO a
-interact' f state = do
-    input <- getLine
-    let (cont, out, state') = f (input, state) in do
-        putStr out
-        if cont then interact' f state' else return state'
+interact' f state = getLine >>= \input ->
+    case f (input, state) of
+        (True, out, state') -> putStr out >> interact' f state'
+        (False, out, state') -> putStr out >> return state'
