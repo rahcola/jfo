@@ -11,7 +11,8 @@ module W4 where
 --
 
 safeDiv :: Integer -> Integer -> Maybe Integer
-safeDiv x y = undefined
+safeDiv _ 0 = Nothing
+safeDiv x y = Just $ div x y
 
 -- Tehtävä 2: Tässä tehtävässä toteutetaan funktio eitherDiv, joka
 -- toimii hieman kuten safeDiv, mutta palauttaa arvon tyyppiä Either
@@ -23,7 +24,8 @@ safeDiv x y = undefined
 -- koitettiin jakaa nollalla.
 
 eitherDiv :: Integer -> Integer -> Either String Integer
-eitherDiv x y = undefined
+eitherDiv x 0 = Left $ (show x) ++ "/0"
+eitherDiv x y = Right $ div x y
 
 -- Tehtävä 3: Toteuta funktio mapMaybe, joka toimii hieman kuten
 -- yhdistetty map & filter.
@@ -46,7 +48,9 @@ eitherDiv x y = undefined
 --   ==> []
 
 mapMaybe :: (a -> Maybe b) -> [a] -> [b]
-mapMaybe f xs = undefined
+mapMaybe _ [] = []
+mapMaybe f (x:xs) = case f x of Nothing -> mapMaybe f xs
+                                Just x' -> x' : mapMaybe f xs
 
 -- Tehtävä 4: Toteuta funktio classify, joka saa listan arvoja tyyppiä
 -- Either a b ja jakaa tuottaa näistä listan tyypin a arvoja ja listan
@@ -62,8 +66,11 @@ mapMaybe f xs = undefined
 --     ==> ([1,0],[True,False])
 
 classify :: [Either a b] -> ([a],[b])
-classify es = undefined
-
+classify [] = ([], [])
+classify (e:es) = case e of Left x -> (x:l, r)
+                            Right x -> (l, x:r)
+  where
+    (l, r) = classify es
 
 -- Tehtävät 5&6: Määrittele tietotyyppi Person, joka sisältää yhden
 -- Int-tyyppisen kentän (ikä) ja String-tyyppisen kentän (nimi).
@@ -71,30 +78,29 @@ classify es = undefined
 -- Määrittele myös Person-arvo matti ja Person-tyypin käsittelemiseen
 -- operaatiot getAge, getName, setAge ja setName. (Ks. alla)
 
-data Person = PersonUndefined
+data Person = Person Int String
   deriving Show
 
 -- matti on henkilö jonka nimi on "Matti" ja ikä 90
 matti :: Person
-matti = undefined
+matti = Person 90 "Matti"
 
 -- getName palauttaa henkilön nimen
 getName :: Person -> String
-getName p = undefined
+getName (Person _ name) = name
 
 -- getAge palauttaa henkilön iän
 getAge :: Person -> Int
-getAge p = undefined
+getAge (Person age _) = age
 
 -- setName asettaa henkilön nimen
 -- HUOM! setName palauttaa uuden henkilön sillä Haskellissa mikään ei muutu
 setName :: String -> Person -> Person
-setName name p = undefined
+setName name (Person age _) = Person age name
 
 -- setAge asettaa henkilön iän
 setAge :: Int -> Person -> Person
-setAge age p = undefined
-  
+setAge age (Person _ name) = Person age name
 
 -- Tehtävä 7&8: Määrittele tietotyyppi TwoCounters joka esittää kahta
 -- laskuria. Määrittele lisäksi alla listatut funktiot TwoCountersin
@@ -107,27 +113,27 @@ setAge age p = undefined
 -- getB (incB (incA zeros))
 --   ==> 1
 
-data TwoCounters = Undefined
+data TwoCounters = Counters Int Int
 
 -- zeros on TwoCounters-arvo, jossa kummatkin laskurit ovat 0
 zeros :: TwoCounters
-zeros = undefined
+zeros = Counters 0 0
 
 -- getA palauttaa A-laskurin arvon
 getA :: TwoCounters -> Int
-getA tc = undefined
+getA (Counters a _) = a
 
 -- getB palauttaa B-laskurin arvon
 getB :: TwoCounters -> Int
-getB tc = undefined
+getB (Counters _ b) = b
 
 -- incA kasvattaa A-laskurin arvoa yhdellä
 incA :: TwoCounters -> TwoCounters
-incA tc = undefined
+incA (Counters a b) = Counters (a + 1) b
 
 -- incB kasvattaa B-laskurin arvoa yhdellä
 incB :: TwoCounters -> TwoCounters
-incB tc = undefined
+incB (Counters a b) = Counters a (b + 1)
 
 -- Tehtävä 9&10: Määrittele tietotyyppi UpDown joka esittää laskuria,
 -- joka voi olla joko nousevassa tai laskevassa tilassa. Toteuta myös
@@ -145,45 +151,49 @@ incB tc = undefined
 -- get (tick (tick (toggle (tick zero))))
 --   ==> -1
 
-data UpDown = UpDownUndefined1 | UpDownUndefined2
+data UpDown = Up Int | Down Int
 
 -- zero on nouseva laskuri jonka arvo on 0
 zero :: UpDown
-zero = undefined
+zero = Up 0
 
 -- get palauttaa laskurin arvon
 get :: UpDown -> Int
-get ud = undefined
+get (Up x) = x
+get (Down x) = x
 
 -- tick kasvattaa nousevaa laskuria yhdellä ja pienentää laskevaa
 -- laskuria yhdellä
 tick :: UpDown -> UpDown
-tick ud = undefined
+tick (Up x) = Up (x + 1)
+tick (Down x) = Down (x - 1)
 
 -- toggle muuttaa nousevan laskurin laskevaksi ja päinvastoin.
 -- Laskurin arvo ei muutu.
 toggle :: UpDown -> UpDown
-toggle ud = undefined
+toggle (Up x) = Down x
+toggle (Down x) = Up x
 
 -- !!!!!
 -- Muutama seuraava tehtävä käsittelevät luennoilla esiteltyä
 -- Tree-tyyppiä, jonka määritelmä on alla.
 
 data Tree a = Leaf | Node a (Tree a) (Tree a)
-            deriving (Show, Eq)
+  deriving (Show, Eq)
                      
 -- Tehtävä 11: Toteuta funktio valAtRoot, joka palauttaa puun juuressa
 -- (eli ylimmässä solmussa) olevan arvon. Paluutyyppinä on Maybe a
 -- koska puu saattaa olla tyhjä (eli Leaf).
 
 valAtRoot :: Tree a -> Maybe a
-valAtRoot t = undefined
+valAtRoot Leaf = Nothing
+valAtRoot (Node val _ _) = Just val
 
 -- Tehtävä 12: Toteuta funktio treeSize, joka laskee puun solmujen (eli
 -- Node-konstruktorien) lukumäärän.
-
 treeSize :: Tree a -> Int
-treeSize t = undefined
+treeSize Leaf = 0
+treeSize (Node _ left right) = 1 + treeSize left + treeSize right
 
 -- Tehtävä 13: Toteuta funktio leftest, joka palauttaa puun
 -- vasemmanpuolimmaisen arvon. Palautustyyppi on Maybe a koska
@@ -201,7 +211,9 @@ treeSize t = undefined
 --   ==> Just 2
 
 leftest :: Tree a -> Maybe a
-leftest t = undefined
+leftest Leaf = Nothing
+leftest (Node x Leaf _) = Just x
+leftest (Node _ left _) = leftest left
 
 -- Tehtävä 14: Toteuta funktio mapTree, joka toimii kuten map, mutta
 -- puille.
@@ -213,7 +225,8 @@ leftest t = undefined
 --   ==> (Node 2 (Node 3 Leaf Leaf) (Node 4 Leaf Leaf))
 
 mapTree :: (a -> b) -> Tree a -> Tree b
-mapTree f t = undefined
+mapTree _ Leaf = Leaf
+mapTree f (Node x left right) = Node (f x) (mapTree f left) (mapTree f right)
 
 -- Tehtävä 15: Toteuta funktio insertL, joka lisää annetun arvon puuhun
 -- mahdollisimman vasemmalle.
@@ -240,7 +253,8 @@ mapTree f t = undefined
 
 
 insertL :: a -> Tree a -> Tree a
-insertL x t = undefined
+insertL x Leaf = Node x Leaf Leaf
+insertL x (Node y left right) = Node y (insertL x left) right
 
 -- Tehtävä 16: Toteuta funktio measure, joka muuntaa annetun puun
 -- sellaiseksi, että jokaisessa solmussa on ko. solmusta alkavan
@@ -251,7 +265,11 @@ insertL x t = undefined
 -- TODO siisti mallivastaus?
 
 measure :: Tree a -> Tree Int
-measure t = undefined
+measure Leaf = Leaf
+measure tree@(Node x left right) = Node (treeSize tree) left' right'
+  where
+    left' = measure left
+    right' = measure right
 
 -- Tehtävä 17: Standardikirjaston funktio
 --   foldr :: (a -> b -> b) -> b -> [a] -> b
@@ -268,13 +286,13 @@ mysum :: [Int] -> Int
 mysum is = foldr sumf 0 is
 
 sumf :: Int -> Int -> Int
-sumf x y = undefined
+sumf = (+)
 
 mylength :: [a] -> Int
 mylength xs = foldr lengthf 0 xs
 
 lengthf :: a -> Int -> Int
-lengthf x y = undefined
+lengthf = const (+ 1)
 
 -- Tehtävä 18: Toteuta funktio foldTree, joka on foldin tapainen
 -- operaatio puille (eli yllä kuvaillulle Tree-luokalle).
@@ -297,9 +315,13 @@ treeLeaves :: Tree a -> Int
 treeLeaves t = foldTree leaft 1 t
 
 foldTree :: (a -> b -> b -> b) -> b -> Tree a -> b
-foldTree f x t = undefined
+foldTree f acc Leaf = acc
+foldTree f acc (Node x left right) = f x left' right'
+  where
+    left' = foldTree f acc left
+    right' = foldTree f acc right
 
--- Tehtävä 19: Alla näet hieman laajennetun version luentojen
+-- tehtävä 19: Alla näet hieman laajennetun version luentojen
 -- värityypistä Color.
 -- 
 -- Konstruktorin Mix tulkinta on, että se on kahden värin sekoitus.
@@ -328,4 +350,8 @@ data Color = Red | Green | Blue | Mix Color Color | Darken Double Color
   deriving Show
 
 rgb :: Color -> [Double]
-rgb col = undefined
+rgb Red = [1,0,0]
+rgb Green = [0,1,0]
+rgb Blue = [0,0,1]
+rgb (Mix a b) = zipWith (\a b -> min 1 (a + b)) (rgb a) (rgb b)
+rgb (Darken amount color) = map (* (1 - amount)) (rgb color)
