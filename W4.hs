@@ -66,11 +66,10 @@ mapMaybe f (x:xs) = case f x of Nothing -> mapMaybe f xs
 --     ==> ([1,0],[True,False])
 
 classify :: [Either a b] -> ([a],[b])
-classify [] = ([], [])
-classify (e:es) = case e of Left x -> (x:l, r)
-                            Right x -> (l, x:r)
+classify = foldr add ([], [])
   where
-    (l, r) = classify es
+    add (Left x) (l, r) = (x:l, r)
+    add (Right x) (l, r) = (l, x:r)
 
 -- Tehtävät 5&6: Määrittele tietotyyppi Person, joka sisältää yhden
 -- Int-tyyppisen kentän (ikä) ja String-tyyppisen kentän (nimi).
@@ -266,10 +265,13 @@ insertL x (Node y left right) = Node y (insertL x left) right
 
 measure :: Tree a -> Tree Int
 measure Leaf = Leaf
-measure tree@(Node x left right) = Node (treeSize tree) left' right'
+measure tree@(Node _ left right) = Node size left' right'
   where
-    left' = measure left
-    right' = measure right
+    m tree@(Node s _ _) = (s, tree)
+    m Leaf = (0, Leaf)
+    (lsize, left') = m . measure $ left
+    (rsize, right') = m . measure $ right
+    size = lsize + rsize + 1
 
 -- Tehtävä 17: Standardikirjaston funktio
 --   foldr :: (a -> b -> b) -> b -> [a] -> b
