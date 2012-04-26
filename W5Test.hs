@@ -77,7 +77,7 @@ m_t2 input =
       Just s ->
         property $
          length (filter (<s) input) == 1
-         || all (==s) (filter (<=s) input)
+         || (s == minimum input && length (filter (==s) input) > 1)
       Nothing -> fail "expected Just, was Nothing"
        
 prop_t2 = (m_t2 :: [Int] -> Property)
@@ -135,6 +135,8 @@ prop_t6 = printTestCase ("Bar <= Bar") ((Bar <= Bar) === True)
           .&. printTestCase ("Xyzzy > Quux") ((Xyzzy > Quux) === True)
           .&. printTestCase ("min Xyzzy Bar") (min Xyzzy Bar === Bar)
           .&. printTestCase ("max Bar Quux") (max Bar Quux === Bar)
+          .&. printTestCase ("compare Xyzzy Xyzzy") (compare Xyzzy Xyzzy == EQ)
+          .&. printTestCase ("compare Bar Bar") (compare Bar Bar == EQ)
           
 prop_t7_eq a b c =
   let v = Vector a b c in

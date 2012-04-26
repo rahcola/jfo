@@ -53,12 +53,13 @@ findDifference :: (Show a, Eq a) => [a] -> [a] -> Maybe String
 findDifference [] [] = Nothing
 findDifference xs ys
   | lxs /= lys = Just $ (show lxs) ++ " /= " ++ (show lys)
-  | (head xs) /= (head ys) = Just $ (show . head $ xs) ++
-                                    " /= " ++ (show . head $ ys)
-  | otherwise = findDifference (tail xs) (tail ys)
+  | x /= y = Just $ (show x) ++ " /= " ++ (show y)
+  | otherwise = findDifference xs' ys'
   where
     lxs = length xs
     lys = length ys
+    (x:xs') = xs
+    (y:ys') = ys
 
 -- Tehtävä 4: Määrittele funktio average, joka laskee annettujen
 -- lukujen keskiarvon. Muista että luokka Fractional on luokan Num
@@ -137,14 +138,12 @@ instance Num Vector where
 --   ==> [(3,False)]
 
 freqs :: Eq a => [a] -> [(Int,a)]
-freqs = g []
+freqs = foldl' inc []
   where
-    g acc [] = acc
-    g acc (x:xs) = g (inc x acc) xs
-    inc x [] = [(1, x)]
-    inc x ((i, y):ys)
+    inc [] x = [(1, x)]
+    inc ((i, y):ys) x
       | x == y = ((i + 1), x):ys
-      | otherwise = (i, y):(inc x ys)
+      | otherwise = (i, y):(inc ys x)
 
 -- Tehtävä 10: Määrittele allaolevalle kokonaislukuja sisältävän
 -- binääripuun tyypille Eq-instanssi.
@@ -214,7 +213,7 @@ runFun :: Fun a -> Int -> a
 runFun (Fun f) x = f x
 
 instance Functor Fun where
-  fmap f (Fun g) = Fun (\i -> f (g i))
+  fmap f (Fun g) = Fun $ f . g
 
 -- Tehtävä 16: Määrittele operaattori ||| joka toimii kuten ||, mutta
 -- pakottaa _oikeanpuoleisen_ argumenttinsa.
@@ -238,9 +237,10 @@ _ ||| _ = False
 -- Huom! length [False,undefined] ==> 2
 
 boolLength :: [Bool] -> Int
-boolLength [] = 0
-boolLength (True:xs) = 1 + boolLength xs
-boolLength (False:xs) = 1 + boolLength xs
+boolLength = foldl' count 0
+  where
+    count acc True = acc + 1
+    count acc False = acc + 1
 
 -- Tehtävä 18: Tämä ja seuraava tehtävä ovat pohjustusta ensi viikon
 -- materiaaliin.
@@ -271,11 +271,9 @@ boolLength (False:xs) = 1 + boolLength xs
 --  (True,True,False)
 
 threeRandom :: (Random a, RandomGen g) => g -> (a,a,a)
-threeRandom g = (a, a', a'')
+threeRandom g = (r !! 0, r !! 1, r !! 2)
   where
-    (a, g') = random g
-    (a', g'') = random g'
-    (a'', _) = random g''
+    r = map fst $ iterate (random . snd) (random g)
 
 -- Tehtävä 19: Toteuta funktio randomizeTree joka ottaa puun ja
 -- palauttaa samanmuotoisen puun jossa jokaisessa Nodessa on
