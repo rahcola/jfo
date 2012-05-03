@@ -44,8 +44,8 @@ tests = [[prop_t1_ok, prop_t1_fail]
         ,[prop_t16]
         ,[prop_t17_1, prop_t17_2, property $ prop_t17_3]
         ,[prop_t18]
-        ,[prop_t19_2]
-        ,[prop_t19_2]
+        ,[prop_t19_1, prop_t19_2, prop_t19_3]
+        ,[prop_t19_1, prop_t19_2, prop_t19_3]
         ]
 
 testEx str ts = do
@@ -332,7 +332,26 @@ prop_t18 =
               printTestCase (s++" NoResult >>= op") $
               (NoResult >>= op) === NoResult]
      
+prop_t19_1 =
+  do i <- choose (0,10)
+     let op = putSL i >> getSL >>= \i -> msgSL (show i)
+         s = "putSL "++show i++" >> getSL >>= \\i -> msgSL (show i)"
+     printTestCase ("runSL ("++s++") 1") $ runSL op 1 === ((),i,[show i])
+
 prop_t19_2 =
+  do msg <- word
+     msg2 <- word
+     i <- choose (0,10)
+     j <- choose (0,10)
+     let op = do msgSL msg
+                 x <- getSL
+                 msgSL (msg2++show x)
+                 putSL (x+i)
+                 return x
+         s = "op = \ndo msgSL "++show msg++"\n   x <- getSL\n   msgSL ("++show msg2++"++show x)\n   putSL (x+"++show i++")\n   return x"
+     printTestCase (s++"\nrunSL op "++show j) $ runSL op j === (j,j+i,[msg,msg2++show j])
+     
+prop_t19_3 =
   arbitrary >>= \o ->
   shrinking shrink o $ \ops ->
   let m (Left i) = modifySL (+i)
